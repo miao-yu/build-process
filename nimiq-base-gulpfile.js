@@ -20,7 +20,7 @@ class NimiqBuild {
     /**
      * Bundle js imports.
      * @param {string} jsEntry - entry point for the js from where other js files can be imported
-     * @param {string} rootPath - The root path the nimiq project structure. Must be an absolute path! (e.g. based on __dirname)
+     * @param {string} rootPath - The root path of the nimiq project structure. Must be an absolute path! (e.g. based on __dirname)
      * @param {string|null} [distPath] - Optional. Write the bundled file to this path.
      * @returns {Stream}
      */
@@ -47,7 +47,7 @@ class NimiqBuild {
     /**
      * Bundle css imports.
      * @param {string} cssEntry - entry point for the css from where other css files can be imported
-     * @param {string} rootPath - The root path the nimiq project structure. Must be an absolute path! (e.g. based on __dirname)
+     * @param {string} rootPath - The root path of the nimiq project structure. Must be an absolute path! (e.g. based on __dirname)
      * @param {string|null} [distPath] - Optional. Write the bundled file to this path.
      * @returns {Stream}
      */
@@ -74,7 +74,7 @@ class NimiqBuild {
      * @param {string} htmlEntry - The original html file.
      * @param {string} jsBundle - Path to the bundled js file, relative to the output html file.
      * @param {string} cssBundle - Path to the bundled css file, relative to the output html file.
-     * @param {string} rootPath - The root path the nimiq project structure. Must be an absolute path! (e.g. based on __dirname)
+     * @param {string} rootPath - The root path of the nimiq project structure. Must be an absolute path! (e.g. based on __dirname)
      * @param {string|null} [distPath] - Optional. Write the bundled file to this path.
      * @returns {Stream}
      */
@@ -92,12 +92,12 @@ class NimiqBuild {
     }
 
     /**
-     * Copy assets and change paths in html, js and css to
-     * @param {Array<String>} assetPaths
-     * @param {Stream} htmlStream
-     * @param {Stream} jsStream
-     * @param {Stream} cssStream
-     * @param {string} rootPath - The root path the nimiq project structure. Must be an absolute path! (e.g. based on __dirname)
+     * Copy assets and change paths in html, js and css to relative paths to the copied files.
+     * @param {Array<String>} assetPaths - a list of assets that should be copied over to the dist folder
+     * @param {Stream} htmlStream - A gulp stream for the HTML to process
+     * @param {Stream} jsStream - A gulp stream for the JavaScript to process
+     * @param {Stream} cssStream - A gulp stream for the CSS to process
+     * @param {string} rootPath - The root path of the nimiq project structure. Must be an absolute path! (e.g. based on __dirname)
      * @param {string|null} [distPath] - Optional. Write the bundled file to this path.
      * @returns {[Stream,Stream,Stream,Stream]}
      */
@@ -121,13 +121,12 @@ class NimiqBuild {
     }
 
     /**
-     *
-     * Setup a new nimiq app build
+     * Create a new nimiq app build
      * @param {string} jsEntry - entry point for the js from where other js files can be imported
      * @param {string} cssEntry - entry point for the css from where other css files can be imported
      * @param {string} htmlEntry - entry point for the html which should include <!-- build:css -->, <!-- build:js --> and <!-- build:browser-warning -->
      * @param {Array.<String>} assetPaths - a list of assets that should be copied over to the dist folder
-     * @param {string} rootPath - The root path the nimiq project structure. Must be an absolute path! (e.g. based on __dirname)
+     * @param {string} rootPath - The root path of the nimiq project structure. Must be an absolute path! (e.g. based on __dirname)
      * @param {string} distPath - Where the output should be written to
      * @returns {Stream}
      */
