@@ -16,6 +16,8 @@ const rename = require('gulp-rename');
 const clone = require('gulp-clone');
 const merge = require('merge2');
 
+const staticAssets = require('./nimiq-static-assets');
+
 class NimiqBuild {
     /**
      * Bundle js imports.
@@ -138,6 +140,9 @@ class NimiqBuild {
         let assetsStream;
         [assetsStream, htmlStream, jsStream, cssStream] =
             NimiqBuild.moveAssets(assetPaths, htmlStream, jsStream, cssStream, rootPath);
+
+        jsStream = jsStream.pipe(staticAssets({rootPath: rootPath}));
+
         /*
         // don't minify for now to not involve too many plugins into the build process
         const minJsStream = jsStream

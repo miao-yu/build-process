@@ -37,6 +37,9 @@
     "gulp-replace": "^0.6.1",
     "gulp-sourcemaps": "^2.6.4",
     "merge2": "^1.2.1",
-    "rollup-plugin-root-import": "^0.2.2"
+    "plugin-error": "^1.0.1",
+    "rollup-plugin-root-import": "^0.2.2",
+    "through2": "^2.0.3",
+    "vinyl": "^2.1.0"
   }
 }
