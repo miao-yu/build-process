@@ -142,6 +142,8 @@ class NimiqBuild {
             NimiqBuild.moveAssets(assetPaths, htmlStream, jsStream, cssStream, rootPath);
 
         jsStream = jsStream.pipe(staticAssets({rootPath: rootPath}));
+        cssStream = cssStream.pipe(staticAssets({rootPath: rootPath}));
+        htmlStream = htmlStream.pipe(staticAssets({rootPath: rootPath}));
 
         /*
         // don't minify for now to not involve too many plugins into the build process
