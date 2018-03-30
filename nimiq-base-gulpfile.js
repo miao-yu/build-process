@@ -5,7 +5,7 @@ const sourcemaps = require('gulp-sourcemaps');
 
 const rollup = require('gulp-better-rollup');
 const rollupRoot = require('rollup-plugin-root-import');
-// const babel = require('gulp-babel');
+const babel = require('gulp-babel');
 
 const cssImport = require('gulp-cssimport');
 const cleanCss = require('gulp-clean-css');
@@ -132,29 +132,32 @@ class NimiqBuild {
      * @param {string} distPath - Where the output should be written to
      * @returns {Stream}
      */
-    static build(jsEntry, cssEntry, htmlEntry, assetPaths, rootPath, distPath) {
+    static build(jsEntry, cssEntry, htmlEntry, assetPaths, rootPath, distPath, minify = false) {
         let jsStream = NimiqBuild.bundleJs(jsEntry, rootPath);
         let cssStream = NimiqBuild.bundleCss(cssEntry, rootPath);
-        let htmlStream = NimiqBuild.bundleHtml(htmlEntry, NimiqBuild.getFileName(jsEntry),
+        let htmlStream = NimiqBuild.bundleHtml(htmlEntry, jsEntry && NimiqBuild.getFileName(jsEntry),
             NimiqBuild.getFileName(cssEntry), rootPath);
         let assetsStream;
         [assetsStream, htmlStream, jsStream, cssStream] =
             NimiqBuild.moveAssets(assetPaths, htmlStream, jsStream, cssStream, rootPath);
 
+        let minJsStream = [];
+        if (minify) {
+            minJsStream.push(jsStream
+                .pipe(clone())
+                .pipe(rename('app.min.js'))
+                .pipe(babel({
+                    presets: ['minify']
+                })));
+        }
+
         jsStream = jsStream.pipe(staticAssets({rootPath: rootPath}));
         cssStream = cssStream.pipe(staticAssets({rootPath: rootPath}));
         htmlStream = htmlStream.pipe(staticAssets({rootPath: rootPath}));
 
-        /*
-        // don't minify for now to not involve too many plugins into the build process
-        const minJsStream = jsStream
-            .pipe(clone())
-            .pipe(rename('app.min.js'))
-            .pipe(babel({
-                presets: ['minify']
-            })); */
-        return NimiqBuild._writeStream(merge([jsStream, /*minJsStream,*/ cssStream, htmlStream, assetsStream]),
-            distPath);
+        const streamItems = [jsStream, cssStream, htmlStream, assetsStream].concat(minJsStream);
+
+        return NimiqBuild._writeStream(merge(streamItems), distPath);
     }
 
     /**
