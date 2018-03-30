@@ -132,7 +132,7 @@ class NimiqBuild {
      * @param {string} distPath - Where the output should be written to
      * @returns {Stream}
      */
-    static build(jsEntry, cssEntry, htmlEntry, assetPaths, rootPath, distPath, minify = false) {
+    static build(jsEntry, cssEntry, htmlEntry, assetPaths, rootPath, distPath, config, minify = false) {
         let jsStream = NimiqBuild.bundleJs(jsEntry, rootPath);
         let cssStream = NimiqBuild.bundleCss(cssEntry, rootPath);
         let htmlStream = NimiqBuild.bundleHtml(htmlEntry, jsEntry && NimiqBuild.getFileName(jsEntry),
