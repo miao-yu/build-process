@@ -5,15 +5,14 @@ const sourcemaps = require('gulp-sourcemaps');
 
 const rollup = require('gulp-better-rollup');
 const rollupRoot = require('rollup-plugin-root-import');
-const babel = require('gulp-babel');
+const babel = require('gulp-babel'); // TODO do minification with uglify-es
 
-const cssImport = require('gulp-cssimport');
+const cssImport = require('gulp-cssimport'); // TODO apparently gulp-clean-css can also inline imports ?
 const cleanCss = require('gulp-clean-css');
 
 const replace = require('gulp-replace');
 const htmlReplace = require('gulp-html-replace');
 const rename = require('gulp-rename');
-const clone = require('gulp-clone');
 const merge = require('merge2');
 
 const staticAssets = require('./nimiq-static-assets');
@@ -23,11 +22,13 @@ class NimiqBuild {
      * Bundle js imports.
      * @param {string} jsEntry - entry point for the js from where other js files can be imported
      * @param {string} rootPath - The root path of the nimiq project structure. Must be an absolute path! (e.g. based on __dirname)
+     * @param {boolean} [minify] - Optional. Whether to minify the js code. Defaults to false. If true, it is important to also add babel-preset-minify to the gulpfile of your project as otherwise babel won't find it.
+     * @param {boolean} [collectAssets] - Optional. Whether to collect the assets annotated by @asset and copy them to the stream.
      * @param {string|null} [distPath] - Optional. Write the bundled file to this path.
      * @returns {Stream}
      */
-    static bundleJs(jsEntry, rootPath, distPath = null) {
-        let stream = gulp.src(jsEntry)
+    static bundleJs(jsEntry, rootPath, minify=false, collectAssets=true, distPath=null) {
+        let jsStream = gulp.src(jsEntry)
             .pipe(sourcemaps.init())
             .pipe(rollup({
                 plugins: [
@@ -40,35 +41,52 @@ class NimiqBuild {
             }, {
                 format: 'iife'
             }));
-        if (distPath) {
-            stream = NimiqBuild._writeStream(stream, distPath);
+        if (collectAssets) {
+            jsStream = jsStream.pipe(staticAssets({ rootPath }));
         }
-        return stream;
+        // TODO minification doesn't work on stream with collected assets, but we have to do minification on that stream, as staticAssets also changes the paths to assets in the source file -> consider changing staticAssets in a way such that it only collects the assetPaths and then replace them using moveAssets
+        if (minify) {
+            jsStream = jsStream
+                .pipe(babel({
+                    presets: ['minify']
+                }));
+        }
+
+        if (distPath) {
+            jsStream = NimiqBuild._writeStream(jsStream, distPath);
+        }
+        return jsStream;
     }
 
     /**
      * Bundle css imports.
      * @param {string} cssEntry - entry point for the css from where other css files can be imported
      * @param {string} rootPath - The root path of the nimiq project structure. Must be an absolute path! (e.g. based on __dirname)
+     * * @param {boolean} [collectAssets] - Optional. Whether to collect the assets annotated by @asset and copy them to the stream.
      * @param {string|null} [distPath] - Optional. Write the bundled file to this path.
      * @returns {Stream}
      */
-    static bundleCss(cssEntry, rootPath, distPath = null) {
-        let stream = gulp.src(cssEntry)
+    static bundleCss(cssEntry, rootPath, collectAssets=true, distPath = null) {
+        let cssStream = gulp.src(cssEntry)
             .pipe(sourcemaps.init())
             .pipe(cssImport({
                 includePaths: [rootPath],
                 // transform absolute paths relative to root path
                 transform: path => path.startsWith('/')? rootPath + path : path
-            }))
-            // the css import will inline the same css multiple times if imported multiple times thus we'll clean it up.
-            .pipe(cleanCss({
-                level: 2
             }));
-        if (distPath) {
-            stream = NimiqBuild._writeStream(stream, distPath);
+        if (collectAssets) {
+            cssStream = cssStream.pipe(staticAssets({ rootPath }));
         }
-        return stream;
+        /*
+        // TODO check whether actually needed... and check whether cleanCss messes the added assets up
+        // the css import will inline the same css multiple times if imported multiple times thus we'll clean it up.
+        cssStream = cssStream.pipe(cleanCss({
+            level: 2
+        }));*/
+        if (distPath) {
+            cssStream = NimiqBuild._writeStream(cssStream, distPath);
+        }
+        return cssStream;
     }
 
     /**
@@ -77,16 +95,20 @@ class NimiqBuild {
      * @param {string} jsBundle - Path to the bundled js file, relative to the output html file.
      * @param {string} cssBundle - Path to the bundled css file, relative to the output html file.
      * @param {string} rootPath - The root path of the nimiq project structure. Must be an absolute path! (e.g. based on __dirname)
+     * * @param {boolean} [collectAssets] - Optional. Whether to collect the assets annotated by @asset and copy them to the stream.
      * @param {string|null} [distPath] - Optional. Write the bundled file to this path.
      * @returns {Stream}
      */
-    static bundleHtml(htmlEntry, jsBundle, cssBundle, rootPath, distPath = null) {
+    static bundleHtml(htmlEntry, jsBundle, cssBundle, rootPath, collectAssets=true, distPath = null) {
         let stream = gulp.src(htmlEntry)
             .pipe(htmlReplace({
                 'js': jsBundle,
                 'css': cssBundle,
                 'browser-warning': gulp.src(rootPath + '/elements/browser-warning/browser-warning.html.template')
             }));
+        if (collectAssets) {
+            stream = stream.pipe(staticAssets({ rootPath }));
+        }
         if (distPath) {
             stream = NimiqBuild._writeStream(stream, distPath);
         }
@@ -110,54 +132,42 @@ class NimiqBuild {
         // replace the asset path in sources
         for (let i=0; i<assetPaths.length; ++i) {
             const regex = new RegExp(assetPaths[i], 'g');
-            jsStream = jsStream.pipe(replace(regex, assetFileNames[i]));
-            cssStream = cssStream.pipe(replace(regex, assetFileNames[i]));
-            htmlStream = htmlStream.pipe(replace(regex, assetFileNames[i]));
+            jsStream = jsStream? jsStream.pipe(replace(regex, assetFileNames[i])) : null;
+            cssStream = cssStream? cssStream.pipe(replace(regex, assetFileNames[i])) : null;
+            htmlStream = htmlStream? htmlStream.pipe(replace(regex, assetFileNames[i])) : null;
         }
         if (distPath) {
-            jsStream = NimiqBuild._writeStream(jsStream, distPath);
-            cssStream = NimiqBuild._writeStream(cssStream, distPath);
-            htmlStream = NimiqBuild._writeStream(htmlStream, distPath);
+            jsStream = jsStream? NimiqBuild._writeStream(jsStream, distPath) : null;
+            cssStream = jsStream? NimiqBuild._writeStream(cssStream, distPath) : null;
+            htmlStream = htmlStream? NimiqBuild._writeStream(htmlStream, distPath) : null;
         }
         return [assetsStream, htmlStream, jsStream, cssStream];
     }
 
     /**
      * Create a new nimiq app build
-     * @param {string} jsEntry - entry point for the js from where other js files can be imported
-     * @param {string} cssEntry - entry point for the css from where other css files can be imported
-     * @param {string} htmlEntry - entry point for the html which should include <!-- build:css -->, <!-- build:js --> and <!-- build:browser-warning -->
+     * @param {string|null} jsEntry - entry point for the js from where other js files can be imported
+     * @param {string|null} cssEntry - entry point for the css from where other css files can be imported
+     * @param {string|null} htmlEntry - entry point for the html which should include <!-- build:css -->, <!-- build:js --> and <!-- build:browser-warning -->
      * @param {Array.<String>} assetPaths - a list of assets that should be copied over to the dist folder
      * @param {string} rootPath - The root path of the nimiq project structure. Must be an absolute path! (e.g. based on __dirname)
      * @param {string} distPath - Where the output should be written to
+     * @param {boolean} [minify] - Optional. Whether to minify the js code. Defaults to false.
      * @returns {Stream}
      */
-    static build(jsEntry, cssEntry, htmlEntry, assetPaths, rootPath, distPath, config, minify = false) {
-        let jsStream = NimiqBuild.bundleJs(jsEntry, rootPath);
-        let cssStream = NimiqBuild.bundleCss(cssEntry, rootPath);
-        let htmlStream = NimiqBuild.bundleHtml(htmlEntry, jsEntry && NimiqBuild.getFileName(jsEntry),
-            NimiqBuild.getFileName(cssEntry), rootPath);
+    static build({jsEntry, cssEntry, htmlEntry, assetPaths=[], rootPath, distPath, minify = false}) {
+        let jsStream = jsEntry? NimiqBuild.bundleJs(jsEntry, rootPath, minify) : null;
+        let cssStream = cssEntry? NimiqBuild.bundleCss(cssEntry, rootPath) : null;
+        let htmlStream = htmlEntry? NimiqBuild.bundleHtml(htmlEntry, jsEntry && NimiqBuild.getFileName(jsEntry),
+            NimiqBuild.getFileName(cssEntry), rootPath) : null;
         let assetsStream;
         [assetsStream, htmlStream, jsStream, cssStream] =
             NimiqBuild.moveAssets(assetPaths, htmlStream, jsStream, cssStream, rootPath);
 
-        let minJsStream = [];
-        if (minify) {
-            minJsStream.push(jsStream
-                .pipe(clone())
-                .pipe(rename('app.min.js'))
-                .pipe(babel({
-                    presets: ['minify']
-                })));
-        }
-
-        jsStream = jsStream.pipe(staticAssets({rootPath: rootPath}));
-        cssStream = cssStream.pipe(staticAssets({rootPath: rootPath}));
-        htmlStream = htmlStream.pipe(staticAssets({rootPath: rootPath}));
-
-        const streamItems = [jsStream, cssStream, htmlStream, assetsStream].concat(minJsStream);
-
-        return NimiqBuild._writeStream(merge(streamItems), distPath);
+        return NimiqBuild._writeStream(
+            merge([jsStream, cssStream, htmlStream, assetsStream].filter(s => s!==null)),
+            distPath
+        );
     }
 
     /**
