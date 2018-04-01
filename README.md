@@ -27,16 +27,17 @@ gulp.task('build', () => NimiqBuild.build('app.js', 'app.css', 'index.html', [],
 
 ### build
 
-Create a new Nimiq app build
+Create a new Nimiq app build. Parameters are given as object with the following properties:
 
 | Parameter  | Type           | Description |
 | ---------- | -------------- | ----------- |
-| jsEntry    | string         | Entry point for the js from where other js files can be imported |
-| cssEntry   | string         | Entry point for the css from where other css files can be imported |
-| htmlEntry  | string         | Entry point for the html which should include `<!-- build:css -->`, `<!-- build:js -->` and `<!-- build:browser-warning -->` |
+| jsEntry    | string         | Optional. Entry point for the js from where other js files can be imported. |
+| cssEntry   | string         | Optional. Entry point for the css from where other css files can be imported |
+| htmlEntry  | string         | optional. Entry point for the html which should include `<!-- build:css -->`, `<!-- build:js -->` and `<!-- build:browser-warning -->` |
 | assetPaths | Array.&lt;string&gt; | A list of assets that should be copied over to the dist folder. Specified by their path (either absolute to `rootPath` or relative to the project folder) |
 | rootPath   | string         | The root path of the nimiq project structure. Must be an absolute path (e.g. based on __dirname) |
 | distPath   | string         | Where the output should be written to |
+| minify     | boolean        | Optional. Whether to minify the javascript. |
 
 Returns a gulp stream.
 
@@ -60,6 +61,8 @@ Bundle js imports.
 | ---------- | -------------- | ----------- |
 | jsEntry    | string         | Entry point for the js from where other js files can be imported |
 | rootPath   | string         | The root path of the nimiq project structure. Must be an absolute path (e.g. based on __dirname) |
+| minify     | boolean        | Optional. Whether to minify the javascript.   |
+| collectAssets | boolean     | Optional. Collect assets annotated by @asset and add them as a copy to the stream. Paths pointing to that asset will be replaced. |
 | distPath   | string         | Optional. Write the bundled file to this path. |
 
 Returns a gulp stream.
@@ -73,6 +76,7 @@ Bundle css imports.
 | ---------- | -------------- | ----------- |
 | cssEntry   | string         | Entry point for the css from where other css files can be imported |
 | rootPath   | string         | The root path of the nimiq project structure. Must be an absolute path (e.g. based on __dirname) |
+| collectAssets | boolean     | Optional. Collect assets annotated by @asset and add them as a copy to the stream. Paths pointing to that asset will be replaced. |
 | distPath   | string         | Optional. Write the bundled file to this path. |
 
 Returns a gulp stream.
@@ -88,6 +92,7 @@ Bundle js and css builds and add a browser warning (from `/elements/browser-warn
 | jsBundle   | string         | Path to the bundled js file, relative to the output html file. |
 | cssBundle  | string         | Path to the bundled css file, relative to the output html file. |
 | rootPath   | string         | The root path of the nimiq project structure. Must be an absolute path (e.g. based on __dirname) |
+| collectAssets | boolean     | Optional. Collect assets annotated by @asset and add them as a copy to the stream. Paths pointing to that asset will be replaced. |
 | distPath   | string         | Optional. Write the bundled file to this path. |
 
 Returns a gulp stream.
@@ -116,7 +121,15 @@ const gulp = require('gulp');
 
 const NimiqBuild = require('../../meta/build-process/nimiq-base-gulpfile.js');
 
-gulp.task('build', () => NimiqBuild.build('app.js', 'app.css', 'index.html', ['images/image.png'], `${__dirname}/../../`, 'dist'));
+gulp.task('build', () => NimiqBuild.build({
+    // jsEntry, cssEntry and htmlEntry only have to be specified if you actually have js/css/html
+    jsEntry: 'app.js',
+    cssEntry: 'app.css',
+    htmlEntry: 'index.html',
+    assetsPaths: ['images/image.png'],
+    rootPath: `${__dirname}/../../`,
+    distPath: 'dist'
+}));
 
 gulp.task('clean', () => NimiqBuild.cleanBuild('dist'));
 ```
