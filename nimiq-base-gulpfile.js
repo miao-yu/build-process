@@ -100,12 +100,19 @@ class NimiqBuild {
      * @returns {Stream}
      */
     static bundleHtml(htmlEntry, jsBundle, cssBundle, rootPath, collectAssets=true, distPath = null) {
+        const bundles = {};
+        if (jsBundle) {
+            bundles.js = jsBundle;
+        }
+        if (cssBundle) {
+            bundles.css = cssBundle;
+        }
+
+        bundles['browser-warning'] = gulp.src(rootPath + '/elements/browser-warning/browser-warning.html.template');
+
         let stream = gulp.src(htmlEntry)
-            .pipe(htmlReplace({
-                'js': jsBundle,
-                'css': cssBundle,
-                'browser-warning': gulp.src(rootPath + '/elements/browser-warning/browser-warning.html.template')
-            }));
+            .pipe(htmlReplace(bundles));
+
         if (collectAssets) {
             stream = stream.pipe(staticAssets({ rootPath }));
         }
@@ -159,7 +166,7 @@ class NimiqBuild {
         let jsStream = jsEntry? NimiqBuild.bundleJs(jsEntry, rootPath, minify) : null;
         let cssStream = cssEntry? NimiqBuild.bundleCss(cssEntry, rootPath) : null;
         let htmlStream = htmlEntry? NimiqBuild.bundleHtml(htmlEntry, jsEntry && NimiqBuild.getFileName(jsEntry),
-            NimiqBuild.getFileName(cssEntry), rootPath) : null;
+            cssEntry && NimiqBuild.getFileName(cssEntry), rootPath) : null;
         let assetsStream;
         [assetsStream, htmlStream, jsStream, cssStream] =
             NimiqBuild.moveAssets(assetPaths, htmlStream, jsStream, cssStream, rootPath);
