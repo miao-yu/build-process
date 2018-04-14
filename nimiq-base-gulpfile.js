@@ -95,11 +95,12 @@ class NimiqBuild {
      * @param {string} jsBundle - Path to the bundled js file, relative to the output html file.
      * @param {string} cssBundle - Path to the bundled css file, relative to the output html file.
      * @param {string} rootPath - The root path of the nimiq project structure. Must be an absolute path! (e.g. based on __dirname)
-     * * @param {boolean} [collectAssets] - Optional. Whether to collect the assets annotated by @asset and copy them to the stream.
+     * @param {Array[]} replaceHTMLStrings - Replacements
+     * @param {boolean} [collectAssets] - Optional. Whether to collect the assets annotated by @asset and copy them to the stream.
      * @param {string|null} [distPath] - Optional. Write the bundled file to this path.
      * @returns {Stream}
      */
-    static bundleHtml(htmlEntry, jsBundle, cssBundle, rootPath, collectAssets=true, distPath = null) {
+    static bundleHtml(htmlEntry, jsBundle, cssBundle, rootPath, replaceHTMLStrings = [], collectAssets=true, distPath = null) {
         const bundles = {};
         if (jsBundle) {
             bundles.js = jsBundle;
@@ -112,6 +113,11 @@ class NimiqBuild {
 
         let stream = gulp.src(htmlEntry)
             .pipe(htmlReplace(bundles));
+
+        for (const [search, replacement] of replaceHTMLStrings) {
+            const regex = new RegExp(search, 'g');
+            stream = stream.pipe(replace(regex, replacement));
+        }
 
         if (collectAssets) {
             stream = stream.pipe(staticAssets({ rootPath }));
@@ -162,11 +168,20 @@ class NimiqBuild {
      * @param {boolean} [minify] - Optional. Whether to minify the js code. Defaults to false.
      * @returns {Stream}
      */
-    static build({jsEntry, cssEntry, htmlEntry, assetPaths=[], rootPath, distPath, minify = false}) {
+    static build({
+                     jsEntry,
+                     cssEntry,
+                     htmlEntry,
+                     assetPaths=[],
+                     rootPath,
+                     distPath,
+                     minify = false,
+                     replaceHTMLStrings
+    }) {
         let jsStream = jsEntry? NimiqBuild.bundleJs(jsEntry, rootPath, minify) : null;
         let cssStream = cssEntry? NimiqBuild.bundleCss(cssEntry, rootPath) : null;
         let htmlStream = htmlEntry? NimiqBuild.bundleHtml(htmlEntry, jsEntry && NimiqBuild.getFileName(jsEntry),
-            cssEntry && NimiqBuild.getFileName(cssEntry), rootPath) : null;
+            cssEntry && NimiqBuild.getFileName(cssEntry), rootPath, replaceHTMLStrings) : null;
         let assetsStream;
         [assetsStream, htmlStream, jsStream, cssStream] =
             NimiqBuild.moveAssets(assetPaths, htmlStream, jsStream, cssStream, rootPath);
