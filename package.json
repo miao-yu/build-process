@@ -30,6 +30,7 @@
     "gulp-better-rollup": "^3.0.0",
     "gulp-clean": "^0.4.0",
     "gulp-clean-css": "^3.9.2",
+    "gulp-concat": "^2.6.1",
     "gulp-cssimport": "^6.0.0",
     "gulp-html-replace": "^1.6.2",
     "gulp-rename": "^1.2.2",

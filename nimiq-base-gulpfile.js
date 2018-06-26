@@ -9,6 +9,7 @@ const babel = require('gulp-babel'); // TODO do minification with uglify-es
 
 const cssImport = require('gulp-cssimport'); // TODO apparently gulp-clean-css can also inline imports ?
 const cleanCss = require('gulp-clean-css');
+const concat = require('gulp-concat');
 
 const replace = require('gulp-replace');
 const htmlReplace = require('gulp-html-replace');
@@ -31,6 +32,7 @@ class NimiqBuild {
         let jsStream = gulp.src(jsEntry)
             .pipe(sourcemaps.init())
             .pipe(rollup({
+                context: 'window',
                 plugins: [
                     rollupRoot({
                         // specify absolute paths in order for rollup plugins to match module IDs
@@ -40,7 +42,8 @@ class NimiqBuild {
                 ]
             }, {
                 format: 'iife'
-            }));
+            }))
+            .pipe(concat(NimiqBuild.getFileName(jsEntry)));
         if (collectAssets) {
             jsStream = jsStream.pipe(staticAssets({ rootPath }));
         }
@@ -73,7 +76,8 @@ class NimiqBuild {
                 includePaths: [rootPath],
                 // transform absolute paths relative to root path
                 transform: path => path.startsWith('/')? rootPath + path : path
-            }));
+            }))
+            .pipe(concat(NimiqBuild.getFileName(cssEntry)));
         if (collectAssets) {
             cssStream = cssStream.pipe(staticAssets({ rootPath }));
         }
@@ -203,6 +207,7 @@ class NimiqBuild {
     }
 
     static getFileName(path) {
+        if (Object.prototype.toString.call(path) === '[object Array]') path = path[path.length - 1];
         return path.substr(path.lastIndexOf('/') + 1);
     }
 
