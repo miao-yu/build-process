@@ -106,11 +106,12 @@ class NimiqBuild {
      */
     static bundleHtml(htmlEntry, jsBundle, cssBundle, rootPath, replaceHTMLStrings = [], collectAssets=true, distPath = null) {
         const bundles = {};
+        const timestamp = Math.round(Date.now() / 1000);
         if (jsBundle) {
-            bundles.js = jsBundle;
+            bundles.js = jsBundle + '?t=' + timestamp;
         }
         if (cssBundle) {
-            bundles.css = cssBundle;
+            bundles.css = cssBundle + '?t=' + timestamp;
         }
 
         bundles['browser-warning'] = gulp.src(rootPath + '/elements/browser-warning/browser-warning.html.template');
