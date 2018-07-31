@@ -146,7 +146,7 @@ class NimiqBuild {
     static moveAssets(assetPaths, htmlStream, jsStream, cssStream, rootPath, distPath = null) {
         const assetFileNames = assetPaths.map(path => NimiqBuild.getFileName(path));
         const resolvedAssetPaths = assetPaths.map(path => path.startsWith('/')? rootPath+path : path);
-        const assetsStream = gulp.src(resolvedAssetPaths); // copy assets unchanged
+        const assetsStream = resolvedAssetPaths.length == 0 ? null : gulp.src(resolvedAssetPaths); // copy assets unchanged
         // replace the asset path in sources
         for (let i=0; i<assetPaths.length; ++i) {
             const regex = new RegExp(assetPaths[i], 'g');
@@ -203,7 +203,7 @@ class NimiqBuild {
      * @returns {Stream}
      */
     static cleanBuild(distFolder) {
-        return gulp.src(distFolder, {read: false})
+        return gulp.src(distFolder, {read: false, allowEmpty: true})
             .pipe(clean());
     }
 
