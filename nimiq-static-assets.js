@@ -21,7 +21,7 @@ function parseAssets(file, reference, opts, push) {
 
 	var code = contents.toString();
 	var result = code;
-	if (new Buffer(code).length === contents.length) {
+	if (Buffer.from(code).length === contents.length) {
 		let match;
 		while(match = pattern.exec(code)) {
 			const url = match[0].slice(7, -1);
@@ -43,7 +43,7 @@ function parseAssets(file, reference, opts, push) {
 	}
 
 	file = file.clone();
-	file.contents = new Buffer(result);
+	file.contents = Buffer.from(result);
 	push(file);
 }
 
