@@ -108,7 +108,10 @@ class NimiqBuild {
         const bundles = {};
         const timestamp = Math.round(Date.now() / 1000);
         if (jsBundle) {
-            bundles.js = jsBundle + '?t=' + timestamp;
+            bundles.js = {
+                src: jsBundle + '?t=' + timestamp,
+                tpl: '<script src="%s" type="text/javascript" defer></script>'
+            };
         }
         if (cssBundle) {
             bundles.css = cssBundle + '?t=' + timestamp;
