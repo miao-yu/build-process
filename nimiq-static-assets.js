@@ -24,7 +24,10 @@ function parseAssets(file, reference, opts, push) {
 	if (Buffer.from(code).length === contents.length) {
 		let match;
 		while(match = pattern.exec(code)) {
-			const url = match[0].slice(7, -1);
+			const slice = match[0].slice(7, -1);
+
+			const url = slice.split(',')[0];
+			const subdir = slice.split(',')[1];
 
 			const absoluteFilePath = url.startsWith('/') ? path.join(rootPath, url) : url;
 			const fileName = getFileName(absoluteFilePath);
@@ -34,7 +37,7 @@ function parseAssets(file, reference, opts, push) {
 			result = result.replace(new RegExp(url, 'g'), fileName);
 
 			const file = new Vinyl({
-				path: absoluteFilePath,
+				path: path.join(path.dirname(absoluteFilePath), subdir || '', path.basename(absoluteFilePath)),
 				base: path.dirname(absoluteFilePath),
 				contents: fs.readFileSync(absoluteFilePath)
 			});
